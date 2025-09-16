@@ -20,7 +20,7 @@ chat_history = {}
 conversation_data = {}
 
 # Configure your n8n webhook URL
-N8N_WEBHOOK_URL = "https://ammar202220216.app.n8n.cloud/webhook-test/1a86a8b4-9bab-46e3-a412-4989779390da"
+N8N_WEBHOOK_URL = "https://ammarmorad.app.n8n.cloud/webhook-test/1a86a8b4-9bab-46e3-a412-4989779390da"
 N8N_ENABLED = True
 
 @app.get("/")
