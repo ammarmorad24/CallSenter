@@ -1,58 +1,95 @@
-# agent_client.py
+# agent_client/main.py - SIMPLIFIED DEBUG VERSION
 import asyncio
 import websockets
 import json
 import random
 
 async def agent_chat():
-    # Generate a random agent ID for this session
     agent_id = f"agent_{random.randint(1000, 9999)}"
     
-    uri = f"ws://localhost:8000/ws/agent?user_id={agent_id}"
+    # UPDATE THIS LINE WITH YOUR EC2 IP:
+    uri = f"ws://51.20.54.101:8000/ws/agent?user_id={agent_id}"
+    # For EC2: uri = f"ws://YOUR-EC2-IP:8000/ws/agent?user_id={agent_id}"
     
-    print(f"Connecting as agent ID: {agent_id}")
+    print(f"🌟 Agent Client Starting")
+    print(f"👤 Agent ID: {agent_id}")
+    print(f"🔗 Connecting to: {uri}")
     
-    async with websockets.connect(uri) as ws:
-        # Start message receive task
-        receive_task = asyncio.create_task(receive_messages(ws))
-        
-        try:
-            while True:
-                # Get agent input
-                message = input("You (type 'end' to end chat): ")
+    try:
+        async with websockets.connect(
+            uri,
+            ping_interval=30,  # Send ping every 30 seconds
+            ping_timeout=10,   # Wait 10 seconds for pong
+            close_timeout=10   # Wait 10 seconds when closing
+        ) as websocket:
+            print("✅ Connected! Waiting for customer...")
+            
+            # Start background task to receive messages
+            receive_task = asyncio.create_task(receive_messages(websocket))
+            
+            try:
+                while True:
+                    # Get user input
+                    message = await asyncio.to_thread(input, "\n💬 You: ")
+                    
+                    if message.lower() in ['end', 'quit', 'exit']:
+                        print("👋 Ending chat...")
+                        await websocket.send(json.dumps({"end_chat": True}))
+                        break
+                    
+                    if message.strip():  # Don't send empty messages
+                        await websocket.send(json.dumps({
+                            "msg": message,
+                            "lang": "ar"  # Agent speaks Arabic
+                        }))
+                        print(f"📤 Sent: {message}")
+            
+            except KeyboardInterrupt:
+                print("\n⚠️  Interrupted! Closing...")
+                try:
+                    await websocket.send(json.dumps({"end_chat": True}))
+                except:
+                    pass
+            finally:
+                receive_task.cancel()
                 
-                if message.lower() == "end":
-                    # Send end_chat message
-                    await ws.send(json.dumps({
-                        "end_chat": True
-                    }))
-                    print("Chat ended.")
-                    break
-                else:
-                    # Send regular message
-                    await ws.send(json.dumps({"msg": message, "lang": "ar"}))
-                    print(f"You: {message}")
-        
-        except KeyboardInterrupt:
-            print("Closing connection...")
-        finally:
-            receive_task.cancel()
+    except Exception as e:
+        print(f"❌ Connection error: {e}")
+        print(f"   Make sure chat service is running on the server!")
 
-async def receive_messages(ws):
+async def receive_messages(websocket):
     try:
         while True:
-            response = await ws.recv()
+            message = await websocket.recv()
+            print(f"\n📨 Raw received: {message}")
+            
             try:
-                data = json.loads(response)
-                if data.get("end_chat") == True:
-                    print(f"System: {data.get('system_message', 'Chat ended')}")
-                    break
+                data = json.loads(message)
+                
+                if "system_message" in data:
+                    status = data.get("status", "")
+                    print(f"🔔 System: {data['system_message']}")
+                    
+                    if data.get("end_chat"):
+                        break
+                        
+                elif "msg" in data:
+                    translated = data["msg"]
+                    original = data.get("original", "")
+                    
+                    print(f"👤 Customer: {translated}")
+                    if original and original != translated:
+                        print(f"   📝 (Original: {original})")
                 else:
-                    print(f"Customer: {data.get('msg', response)}")
+                    print(f"🔄 Other message: {data}")
+                    
             except json.JSONDecodeError:
-                print(f"Customer: {response}")
+                print(f"📨 Customer: {message}")
+                
     except websockets.exceptions.ConnectionClosed:
-        print("Connection closed")
+        print("\n🔌 Connection closed")
+    except Exception as e:
+        print(f"\n❌ Error receiving: {e}")
 
 if __name__ == "__main__":
     asyncio.run(agent_chat())
