@@ -1,0 +1,268 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {}
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -2080,
+        -224
+      ],
+      "id": "d024070d-00e1-4fb7-8e5a-5988223f7af9",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "appT9cmwIDC0kX5P0",
+          "mode": "list",
+          "cachedResultName": "Conversation Insights",
+          "cachedResultUrl": "https://airtable.com/appT9cmwIDC0kX5P0"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblwtmFJqxWL95hWG",
+          "mode": "list",
+          "cachedResultName": "Conversations",
+          "cachedResultUrl": "https://airtable.com/appT9cmwIDC0kX5P0/tblwtmFJqxWL95hWG"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        -1888,
+        -192
+      ],
+      "id": "f91ee160-bcb3-436b-bcd4-00c67867cd1c",
+      "name": "Search records",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "pN0DKAL7uuP1eW6a",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "worksheet",
+        "operation": "append",
+        "workbook": {
+          "__rl": true,
+          "value": "BB7EE76EFA1A6273!se7120271d2664f85a4bfa3d20a81a71f",
+          "mode": "list",
+          "cachedResultName": "book",
+          "cachedResultUrl": "https://onedrive.live.com/personal/bb7ee76efa1a6273/_layouts/15/doc.aspx?resid=e7120271-d266-4f85-a4bf-a3d20a81a71f&cid=bb7ee76efa1a6273"
+        },
+        "worksheet": {
+          "__rl": true,
+          "value": "{8794262E-1274-4A1E-925B-196776671A2B}",
+          "mode": "list",
+          "cachedResultName": "Data",
+          "cachedResultUrl": "https://onedrive.live.com/personal/bb7ee76efa1a6273/_layouts/15/doc.aspx?resid=e7120271-d266-4f85-a4bf-a3d20a81a71f&cid=bb7ee76efa1a6273&activeCell=Data!A1"
+        },
+        "fieldsUi": {
+          "values": [
+            {
+              "column": "Conversation ID",
+              "fieldValue": "={{ $json['Conversation ID'] }}"
+            },
+            {
+              "column": "Customer Language",
+              "fieldValue": "={{ $json['Customer Language'] }}"
+            },
+            {
+              "column": "Customer ID",
+              "fieldValue": "={{ $json.Customer }}"
+            },
+            {
+              "column": "Agent ID",
+              "fieldValue": "={{ $json.Agent }}"
+            },
+            {
+              "column": "Start",
+              "fieldValue": "={{ $json['Start Time'] }}"
+            },
+            {
+              "column": "End",
+              "fieldValue": "={{ $json['End Time'] }}"
+            },
+            {
+              "column": "Message",
+              "fieldValue": "={{ $json.Messages }}"
+            },
+            {
+              "column": "Duration",
+              "fieldValue": "={{ $json['Duration (Minutes)'] }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.microsoftExcel",
+      "typeVersion": 2.1,
+      "position": [
+        -1680,
+        -208
+      ],
+      "id": "38f6cae6-5faa-479f-a266-524b075dbf3b",
+      "name": "Append data to sheet",
+      "credentials": {
+        "microsoftExcelOAuth2Api": {
+          "id": "c0KNsmeqQqTWLYjA",
+          "name": "Microsoft Excel account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "mariam20221146@gmail.com",
+        "subject": "Weekly Report",
+        "emailType": "text",
+        "message": "This dashboard gives a weekly overview of customer chats, showing key metrics such as total chats, customers, agents, average duration, and messages per chat. It also presents trends, sentiment, languages, and performance by customers and agents.",
+        "options": {
+          "attachmentsUi": {
+            "attachmentsBinary": [
+              {}
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        -1072,
+        -224
+      ],
+      "id": "9f3614b3-2937-45b3-a5bf-6f7263313756",
+      "name": "Send a message",
+      "webhookId": "8bca6118-326c-42bc-bc0f-d6d02e67eba2",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "EKd26J2lVfNoufyD",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": "e7120271-d266-4f85-a4bf-a3d20a81a71f"
+      },
+      "type": "n8n-nodes-base.microsoftOneDrive",
+      "typeVersion": 1,
+      "position": [
+        -1264,
+        -208
+      ],
+      "id": "6085f7c0-771d-4aef-a15a-eda87ba93071",
+      "name": "Download a file",
+      "credentials": {
+        "microsoftOneDriveOAuth2Api": {
+          "id": "ffjcoStyib6NyMfa",
+          "name": "Microsoft Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldsToAggregate": {
+          "fieldToAggregate": [
+            {
+              "fieldToAggregate": "Conversation ID",
+              "renameField": true,
+              "outputFieldName": "rows_count"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        -1472,
+        -176
+      ],
+      "id": "214f6481-7ece-40ff-9bf5-3e4503917000",
+      "name": "Aggregate"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Search records",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search records": {
+      "main": [
+        [
+          {
+            "node": "Append data to sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append data to sheet": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download a file": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "Download a file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "cbb99631-6b1e-4d20-a0a3-cc87e52b9215",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "7995e97d0e60dcc8c975287877779afdd65a8d9bc1d4aaf72932b5ce8bb1be8b"
+  },
+  "id": "yp80f8a8ENXDvbzN",
+  "tags": []
+}

@@ -17,7 +17,6 @@ import time
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(ROOT_DIR)
 
-from chat_service.translate import translate_en_to_ar, translate_ar_to_en
 
 st.set_page_config(page_title="Agent Chat", page_icon="💬")
 
@@ -37,7 +36,7 @@ if "incoming_queue" not in st.session_state:
 if "outgoing_queue" not in st.session_state:
     st.session_state.outgoing_queue = queue.Queue()
 
-URI = f"ws://127.0.0.1:8000/ws/agent?user_id={st.session_state.agent_id}"
+URI = f"ws://13.60.58.231:8000/ws/agent?user_id={st.session_state.agent_id}"
 
 st.title(" Agent Client ")
 st.write(f"**Agent ID:** {st.session_state.agent_id}")
@@ -86,55 +85,50 @@ if not st.session_state.thread_started:
     st.session_state.thread_started = True
     time.sleep(0.05)
 
-# UI send: enqueue on outgoing_queue
-# def send_and_clear():
-#     msg = st.session_state.user_input.strip()
-#     if not msg:
-#         return
-#     st.session_state.messages.append(f"📤 Sent: {msg}")
-#     st.session_state.user_input = ""
-#     st.session_state.outgoing_queue.put({"msg": msg, "lang": "ar"})
-def send_and_clear():
-    msg = st.session_state.user_input.strip()
-    if not msg:
-        return
-    # REMOVE this line (causes duplication):
-    # st.session_state.messages.append(f"📤 Sent: {msg}")
-    st.session_state.user_input = ""
-    st.session_state.outgoing_queue.put({"msg": msg, "lang": "ar"})
+# UI: input field and send button
+user_input = st.text_input("💬 You:", key="user_input")
 
-st.text_input("💬 You:", key="user_input", on_change=send_and_clear)
+if st.button("Send"):
+    msg = user_input.strip()
+    if msg:
+        # Add your own message to history immediately (server doesn't echo back)
+        st.session_state.messages.append(f"📤 Sent: {msg}")
+        st.session_state.outgoing_queue.put({"msg": msg, "lang": "ar"})
+        st.session_state.user_input = ""  # Clear input after sending
+        st.rerun()  # Optional: Force immediate refresh to show the message
 
-# Drain incoming queue
+# Drain incoming queue - add deduplication to prevent repeats
 q = st.session_state.incoming_queue
 added = False
+seen_messages = set()  # Track seen messages to avoid repeats
 while not q.empty():
     try:
         sender, msg, original = q.get_nowait()
+        message_key = (sender, msg, original)  # Unique key for deduplication
+        if message_key not in seen_messages:
+            seen_messages.add(message_key)
+            added = True
+            if sender == "system":
+                st.session_state.messages.append(f"*{msg}*")
+            elif sender == "agent":
+                display = f"👤 Customer: {msg}"
+                if original and original != msg:
+                    display += f"\n   📝 (Original: {original})"
+                st.session_state.messages.append(display)
+            else:
+                st.session_state.messages.append(str((sender, msg, original)))
     except Exception:
         break
-    added = True
-    if sender == "system":
-        st.session_state.messages.append(f"*{msg}*")
-    elif sender == "agent":
-        display = f"👤 Customer: {msg}"
-        if original and original != msg:
-            display += f"\n   📝 (Original: {original})"
-        st.session_state.messages.append(display)
-    else:
-        st.session_state.messages.append(str((sender, msg, original)))
-
 
 # --- End Chat Button ---
 if st.button("🔴 End Chat"):
     try:
-        # Send a signal to server that customer disconnected
-        st.session_state.outgoing_queue.put({"msg": "end_chat"})
+        # Send a signal to server that agent disconnected
+        st.session_state.outgoing_queue.put({"end_chat": True})  # Fixed: Send in server-expected format
     except:
         pass
-    st.session_state.chat_history.append(("system", "🚪 You ended the chat.", ""))
+    st.session_state.messages.append("🚪 You ended the chat.")  # Fixed: Use 'messages' (list of strings) instead of 'chat_history'
     st.stop()  # stops Streamlit rerun so thread won't keep running
-
 
 # Render messages
 st.write("---")
@@ -144,81 +138,3 @@ for message in st.session_state.messages:
 # If we consumed messages, request a rerun to show them immediately
 if added:
     st.rerun()
-
-
-# import streamlit as st
-# import asyncio
-# import websockets
-# import json
-# import random
-
-# st.set_page_config(page_title="Agent Chat", page_icon="💬")
-
-# if "messages" not in st.session_state:
-#     st.session_state.messages = []
-# if "agent_id" not in st.session_state:
-#     st.session_state.agent_id = f"agent_{random.randint(1000, 9999)}"
-# if "connected" not in st.session_state:
-#     st.session_state.connected = False
-# if "user_input" not in st.session_state:
-#     st.session_state.user_input = ""
-
-# uri = f"ws://127.0.0.1:8000/ws/agent?user_id={st.session_state.agent_id}"
-
-# st.title("🌟 Agent Client (Streamlit)")
-# st.write(f"**Agent ID:** {st.session_state.agent_id}")
-# st.write(f"**Server:** {uri}")
-
-# async def send_message(msg):
-#     try:
-#         async with websockets.connect(uri) as websocket:
-#             await websocket.send(json.dumps({"msg": msg, "lang": "ar"}))
-#             response = await websocket.recv()
-#             data = json.loads(response)
-#             if "system_message" in data:
-#                 st.session_state.messages.append(f"🔔 System: {data['system_message']}")
-#             elif "msg" in data:
-#                 translated = data["msg"]
-#                 original = data.get("original", "")
-#                 msg = f"👤 Customer: {translated}"
-#                 if original and original != translated:
-#                     msg += f"\n   📝 (Original: {original})"
-#                 st.session_state.messages.append(msg)
-#             else:
-#                 st.session_state.messages.append(f"🔄 Other message: {data}")
-#     except Exception as e:
-#         st.session_state.messages.append(f"❌ Connection error: {e}")
-
-# # callback function to send & clear
-# def send_and_clear():
-#     if st.session_state.user_input.strip():
-#         asyncio.run(send_message(st.session_state.user_input))
-#         st.session_state.messages.append(f"📤 Sent: {st.session_state.user_input}")
-#         st.session_state.user_input = ""  # clear input
-
-# st.text_input("💬 You:", key="user_input", on_change=send_and_clear)
-
-# if st.button("Refresh"):
-#     async def receive_message():
-#         try:
-#             async with websockets.connect(uri) as websocket:
-#                 response = await websocket.recv()
-#                 data = json.loads(response)
-#                 if "system_message" in data:
-#                     st.session_state.messages.append(f"🔔 System: {data['system_message']}")
-#                 elif "msg" in data:
-#                     translated = data["msg"]
-#                     original = data.get("original", "")
-#                     msg = f"👤 Customer: {translated}"
-#                     if original and original != translated:
-#                         msg += f"\n   📝 (Original: {original})"
-#                     st.session_state.messages.append(msg)
-#                 else:
-#                     st.session_state.messages.append(f"🔄 Other message: {data}")
-#         except Exception as e:
-#             st.session_state.messages.append(f"❌ Connection error: {e}")
-#     asyncio.run(receive_message())
-
-# st.write("---")
-# for msg in st.session_state.messages:
-#     st.write(msg)

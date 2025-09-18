@@ -14,7 +14,6 @@ import time
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(ROOT_DIR)
 
-from chat_service.translate import translate_en_to_ar, translate_ar_to_en
 
 st.set_page_config(page_title="Customer Chat", page_icon="🧑")
 
@@ -40,7 +39,7 @@ if "incoming_queue" not in st.session_state:
 if "outgoing_queue" not in st.session_state:
     st.session_state.outgoing_queue = queue.Queue()
 
-URI = f"ws://127.0.0.1:8000/ws/customer?user_id={st.session_state.customer_id}&language=en"
+URI = f"ws://13.60.58.231:8000/ws/customer?user_id={st.session_state.customer_id}&language=en"
 
 st.title(" Customer Client")
 st.write(f"**Customer ID:** {st.session_state.customer_id}")
@@ -96,54 +95,49 @@ if not st.session_state.thread_started:
     # small pause to let thread begin connecting (optional)
     time.sleep(0.05)
 
-# UI send callback: push into outgoing_queue (background sender will send via same ws)
-# def send_and_clear():
-#     msg = st.session_state.user_input.strip()
-#     if not msg:
-#         return
-#     st.session_state.chat_history.append(("customer", msg, ""))
-#     st.session_state.user_input = ""
-#     # enqueue the payload that the server expects
-#     st.session_state.outgoing_queue.put({"msg": msg, "lang": "en"})
-def send_and_clear():
-    msg = st.session_state.user_input.strip()
-    if not msg:
-        return
-    # REMOVE this line (causes duplication):
-    # st.session_state.chat_history.append(("customer", msg, ""))
-    st.session_state.user_input = ""
-    st.session_state.outgoing_queue.put({"msg": msg, "lang": "en"})
+# UI: input field and send button
+user_input = st.text_input("💬 You:", key="user_input")
 
-st.text_input("💬 You:", key="user_input", on_change=send_and_clear)
+if st.button("Send"):
+    msg = user_input.strip()
+    if msg:
+        # Add your own message to history immediately (server doesn't echo back)
+        st.session_state.chat_history.append(("customer", msg, ""))
+        st.session_state.outgoing_queue.put({"msg": msg, "lang": "en"})
+        st.session_state.user_input = ""  # Clear input after sending
+        st.rerun()  # Optional: Force immediate refresh to show the message
 
-# Drain incoming queue (main thread only)
+# Drain incoming queue (main thread only) - add deduplication to prevent repeats
 q = st.session_state.incoming_queue
 added = False
+seen_messages = set()  # Track seen messages to avoid repeats
 while not q.empty():
     try:
         sender, msg, original = q.get_nowait()
+        message_key = (sender, msg, original)  # Unique key for deduplication
+        if message_key not in seen_messages:
+            seen_messages.add(message_key)
+            added = True
+            if sender == "system":
+                st.session_state.chat_history.append(("system", msg, ""))
+            elif sender == "agent":
+                st.session_state.chat_history.append(("agent", msg, original))
+            elif sender == "customer":
+                st.session_state.chat_history.append(("customer", msg, original))
+            else:
+                st.session_state.chat_history.append((sender, msg, original))
     except Exception:
         break
-    added = True
-    if sender == "system":
-        st.session_state.chat_history.append(("system", msg, ""))
-    elif sender == "agent":
-        st.session_state.chat_history.append(("agent", msg, original))
-    elif sender == "customer":
-        st.session_state.chat_history.append(("customer", msg, original))
-    else:
-        st.session_state.chat_history.append((sender, msg, original))
 
 # --- End Chat Button ---
 if st.button("🔴 End Chat"):
     try:
         # Send a signal to server that customer disconnected
-        st.session_state.outgoing_queue.put({"msg": "end_chat"})
+        st.session_state.outgoing_queue.put({"end_chat": True})  # Fixed: Send in server-expected format
     except:
         pass
     st.session_state.chat_history.append(("system", "🚪 You ended the chat.", ""))
     st.stop()  # stops Streamlit rerun so thread won't keep running
-
 
 # Render chat
 st.write("---")

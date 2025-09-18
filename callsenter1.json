@@ -1,0 +1,290 @@
+{
+  "name": "My workflow 4",
+  "nodes": [
+    {
+      "parameters": {
+        "multipleMethods": true,
+        "httpMethod": [
+          "POST"
+        ],
+        "path": "1a86a8b4-9bab-46e3-a412-4989779390da",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -400,
+        -16
+      ],
+      "id": "3ce1cd1a-3bbd-49b3-8fe8-939a05afba16",
+      "name": "Webhook",
+      "webhookId": "1a86a8b4-9bab-46e3-a412-4989779390da",
+      "alwaysOutputData": false,
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "inputText": "={{ $json.corpus }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.sentimentAnalysis",
+      "typeVersion": 1.1,
+      "position": [
+        208,
+        -32
+      ],
+      "id": "d6ff9276-965e-42f3-82f2-b748f346dab1",
+      "name": "Sentiment Analysis"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        144,
+        304
+      ],
+      "id": "081d2598-d8d6-4eba-8519-c37d86df15b5",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "LNIAbvjNtCRHtOyB",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "base": {
+          "__rl": true,
+          "value": "appT9cmwIDC0kX5P0",
+          "mode": "list",
+          "cachedResultName": "Conversation Insights",
+          "cachedResultUrl": "https://airtable.com/appT9cmwIDC0kX5P0"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblwtmFJqxWL95hWG",
+          "mode": "list",
+          "cachedResultName": "Conversations",
+          "cachedResultUrl": "https://airtable.com/appT9cmwIDC0kX5P0/tblwtmFJqxWL95hWG"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": false
+            },
+            {
+              "id": "Conversation ID",
+              "displayName": "Conversation ID",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Customer",
+              "displayName": "Customer",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Agent",
+              "displayName": "Agent",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Customer Language",
+              "displayName": "Customer Language",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Start Time",
+              "displayName": "Start Time",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "End Time",
+              "displayName": "End Time",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Duration (Minutes)",
+              "displayName": "Duration (Minutes)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Messages",
+              "displayName": "Messages",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        640,
+        -16
+      ],
+      "id": "d30ffee3-e72a-4406-9ca2-cc6fbbd711c8",
+      "name": "Create or update a record",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "uG1PWVXXBsXt82mj",
+          "name": "CallSenter"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "instructions": "extract the number of messages, extract the original messages from the customer and the translated from the agent messages in one single corpus",
+        "codeGeneratedForPrompt": "extract all the original chat texts in a single big corpus",
+        "jsCode": "const items = $input.all();\nconst corpus = items\n  .map((item) => item.json.body.chat_history.map((chat) => chat.original))\n  .flat()\n  .join(\" \");\n\nreturn { corpus };\n"
+      },
+      "type": "n8n-nodes-base.aiTransform",
+      "typeVersion": 1,
+      "position": [
+        -144,
+        96
+      ],
+      "id": "85c29317-de57-42da-bb6f-aa3a4c4e13a1",
+      "name": "AI Transform"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "AI Transform",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Sentiment Analysis",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sentiment Analysis": {
+      "main": [
+        [
+          {
+            "node": "Create or update a record",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create or update a record",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create or update a record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Transform": {
+      "main": [
+        [
+          {
+            "node": "Sentiment Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "48a411ac-5953-4a48-bb13-ec7d39ef8394",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "d944d93aa7e99bf3d6021fcfa64efa3fe947d1dfe4584822a4e6d658361f09ad"
+  },
+  "id": "p0e8u0WPQvetZJTf",
+  "tags": []
+}
