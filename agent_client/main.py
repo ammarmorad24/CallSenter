@@ -1,95 +1,79 @@
-# agent_client/main.py - SIMPLIFIED DEBUG VERSION
+import streamlit as st
 import asyncio
 import websockets
 import json
 import random
 
-async def agent_chat():
-    agent_id = f"agent_{random.randint(1000, 9999)}"
-    
-    # UPDATE THIS LINE WITH YOUR EC2 IP:
-    uri = f"ws://51.20.54.101:8000/ws/agent?user_id={agent_id}"
-    # For EC2: uri = f"ws://YOUR-EC2-IP:8000/ws/agent?user_id={agent_id}"
-    
-    print(f"🌟 Agent Client Starting")
-    print(f"👤 Agent ID: {agent_id}")
-    print(f"🔗 Connecting to: {uri}")
-    
-    try:
-        async with websockets.connect(
-            uri,
-            ping_interval=30,  # Send ping every 30 seconds
-            ping_timeout=10,   # Wait 10 seconds for pong
-            close_timeout=10   # Wait 10 seconds when closing
-        ) as websocket:
-            print("✅ Connected! Waiting for customer...")
-            
-            # Start background task to receive messages
-            receive_task = asyncio.create_task(receive_messages(websocket))
-            
-            try:
-                while True:
-                    # Get user input
-                    message = await asyncio.to_thread(input, "\n💬 You: ")
-                    
-                    if message.lower() in ['end', 'quit', 'exit']:
-                        print("👋 Ending chat...")
-                        await websocket.send(json.dumps({"end_chat": True}))
-                        break
-                    
-                    if message.strip():  # Don't send empty messages
-                        await websocket.send(json.dumps({
-                            "msg": message,
-                            "lang": "ar"  # Agent speaks Arabic
-                        }))
-                        print(f"📤 Sent: {message}")
-            
-            except KeyboardInterrupt:
-                print("\n⚠️  Interrupted! Closing...")
-                try:
-                    await websocket.send(json.dumps({"end_chat": True}))
-                except:
-                    pass
-            finally:
-                receive_task.cancel()
-                
-    except Exception as e:
-        print(f"❌ Connection error: {e}")
-        print(f"   Make sure chat service is running on the server!")
+st.set_page_config(page_title="Agent Chat", page_icon="💬")
 
-async def receive_messages(websocket):
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+if "agent_id" not in st.session_state:
+    st.session_state.agent_id = f"agent_{random.randint(1000, 9999)}"
+if "connected" not in st.session_state:
+    st.session_state.connected = False
+if "user_input" not in st.session_state:
+    st.session_state.user_input = ""
+
+uri = f"ws://51.20.54.101:8000/ws/agent?user_id={st.session_state.agent_id}"
+
+st.title("🌟 Agent Client (Streamlit)")
+st.write(f"**Agent ID:** {st.session_state.agent_id}")
+st.write(f"**Server:** {uri}")
+
+async def send_message(msg):
     try:
-        while True:
-            message = await websocket.recv()
-            print(f"\n📨 Raw received: {message}")
-            
-            try:
-                data = json.loads(message)
-                
+        async with websockets.connect(uri) as websocket:
+            await websocket.send(json.dumps({"msg": msg, "lang": "ar"}))
+            response = await websocket.recv()
+            data = json.loads(response)
+            if "system_message" in data:
+                st.session_state.messages.append(f"🔔 System: {data['system_message']}")
+            elif "msg" in data:
+                translated = data["msg"]
+                original = data.get("original", "")
+                msg = f"👤 Customer: {translated}"
+                if original and original != translated:
+                    msg += f"\n   📝 (Original: {original})"
+                st.session_state.messages.append(msg)
+            else:
+                st.session_state.messages.append(f"🔄 Other message: {data}")
+    except Exception as e:
+        st.session_state.messages.append(f"❌ Connection error: {e}")
+
+# callback function to send & clear
+def send_and_clear():
+    if st.session_state.user_input.strip():
+        asyncio.run(send_message(st.session_state.user_input))
+        st.session_state.messages.append(f"📤 Sent: {st.session_state.user_input}")
+        # هنا نمسح الـ input في نفس callback
+        st.session_state.user_input = ""  # مسموح هنا لأننا جوه callback
+
+# widget with callback
+st.text_input("💬 You:", key="user_input", on_change=send_and_clear)
+
+# زرار Refresh
+if st.button("Refresh"):
+    async def receive_message():
+        try:
+            async with websockets.connect(uri) as websocket:
+                response = await websocket.recv()
+                data = json.loads(response)
                 if "system_message" in data:
-                    status = data.get("status", "")
-                    print(f"🔔 System: {data['system_message']}")
-                    
-                    if data.get("end_chat"):
-                        break
-                        
+                    st.session_state.messages.append(f"🔔 System: {data['system_message']}")
                 elif "msg" in data:
                     translated = data["msg"]
                     original = data.get("original", "")
-                    
-                    print(f"👤 Customer: {translated}")
+                    msg = f"👤 Customer: {translated}"
                     if original and original != translated:
-                        print(f"   📝 (Original: {original})")
+                        msg += f"\n   📝 (Original: {original})"
+                    st.session_state.messages.append(msg)
                 else:
-                    print(f"🔄 Other message: {data}")
-                    
-            except json.JSONDecodeError:
-                print(f"📨 Customer: {message}")
-                
-    except websockets.exceptions.ConnectionClosed:
-        print("\n🔌 Connection closed")
-    except Exception as e:
-        print(f"\n❌ Error receiving: {e}")
+                    st.session_state.messages.append(f"🔄 Other message: {data}")
+        except Exception as e:
+            st.session_state.messages.append(f"❌ Connection error: {e}")
+    asyncio.run(receive_message())
 
-if __name__ == "__main__":
-    asyncio.run(agent_chat())
+st.write("---")
+for msg in st.session_state.messages:
+    st.write(msg)
