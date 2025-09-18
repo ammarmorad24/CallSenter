@@ -8,7 +8,7 @@ async def customer_chat():
     customer_id = f"cust_{random.randint(1000, 9999)}"
     
     # UPDATE THIS LINE WITH YOUR EC2 IP:
-    uri = f"ws://51.20.54.101:8000/ws/customer?user_id={customer_id}"
+    uri = f"ws://127.0.0.1:8000/ws/customer?user_id={customer_id}"
     # For EC2: uri = f"ws://YOUR-EC2-IP:8000/ws/customer?user_id={customer_id}"
     
     print(f"🌟 Customer Client Starting")

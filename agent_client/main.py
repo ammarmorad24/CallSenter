@@ -15,9 +15,9 @@ if "connected" not in st.session_state:
 if "user_input" not in st.session_state:
     st.session_state.user_input = ""
 
-uri = f"ws://51.20.54.101:8000/ws/agent?user_id={st.session_state.agent_id}"
+uri = f"ws://127.0.0.1:8000/ws/agent?user_id={st.session_state.agent_id}"
 
-st.title("🌟 Agent Client (Streamlit)")
+st.title("🌟 Agent Client")
 st.write(f"**Agent ID:** {st.session_state.agent_id}")
 st.write(f"**Server:** {uri}")
 

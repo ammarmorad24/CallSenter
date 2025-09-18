@@ -5,7 +5,7 @@ import random
 
 async def agent_chat(websocket, user_input):
     agent_id = f"agent_{random.randint(1000, 9999)}"
-    uri = f"ws://51.20.54.101:8000/ws/agent?user_id={agent_id}"
+    uri = f"ws://127.0.0.1:8000/ws/agent?user_id={agent_id}"
 
     try:
         async with websockets.connect(uri) as websocket:
@@ -39,4 +39,4 @@ async def agent_chat(websocket, user_input):
         print(f"❌ Connection error: {e}")
 
 def start_chat(user_input):
-    asyncio.run(agent_chat(websockets.connect("ws://51.20.54.101:8000/ws/agent"), user_input))
+    asyncio.run(agent_chat(websockets.connect("ws://127.0.0.1:8000/ws/agent"), user_input))

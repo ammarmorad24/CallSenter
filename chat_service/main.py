@@ -2,7 +2,9 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query
 import httpx
 import json
-from translate import translate_text, translate_ar_to_en, translate_en_to_ar
+# from translate import translate_text, translate_ar_to_en, translate_en_to_ar
+from chat_service.translate import translate_text, translate_ar_to_en, translate_en_to_ar
+
 import datetime
 import uuid
 
@@ -21,7 +23,7 @@ conversation_data = {}
 
 # Configure your n8n webhook URL
 N8N_WEBHOOK_URL = "https://ammarmorad.app.n8n.cloud/webhook-test/1a86a8b4-9bab-46e3-a412-4989779390da"
-N8N_ENABLED = True
+N8N_ENABLED = True  # Set to False to disable n8n integration
 
 @app.get("/")
 async def root():
