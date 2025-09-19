@@ -2,8 +2,8 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query
 import httpx
 import json
-# from translate import translate_text, translate_ar_to_en, translate_en_to_ar
-from chat_service.translate import translate_text, translate_ar_to_en, translate_en_to_ar
+from translate import translate_text, translate_ar_to_en, translate_en_to_ar
+# from chat_service.translate import translate_text, translate_ar_to_en, translate_en_to_ar
 
 import datetime
 import uuid
