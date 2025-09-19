@@ -85,17 +85,18 @@ if not st.session_state.thread_started:
     st.session_state.thread_started = True
     time.sleep(0.05)
 
-# UI: input field and send button
-user_input = st.text_input("💬 You:", key="user_input")
-
-if st.button("Send"):
-    msg = user_input.strip()
-    if msg:
-        # Add your own message to history immediately (server doesn't echo back)
-        st.session_state.messages.append(f"📤 Sent: {msg}")
-        st.session_state.outgoing_queue.put({"msg": msg, "lang": "ar"})
-        st.session_state.user_input = ""  # Clear input after sending
-        st.rerun()  # Optional: Force immediate refresh to show the message
+# UI: input field and send button (wrapped in a form for auto-clearing)
+with st.form(key="send_form"):
+    user_input = st.text_input("💬 You:")
+    submit_button = st.form_submit_button("Send")
+    
+    if submit_button:
+        msg = user_input.strip()
+        if msg:
+            # Add your own message to history immediately (server doesn't echo back)
+            st.session_state.messages.append(f"📤 Sent: {msg}")
+            st.session_state.outgoing_queue.put({"msg": msg, "lang": "ar"})
+            # No need for st.session_state.user_input = "" or st.rerun() - form handles clearing
 
 # Drain incoming queue - add deduplication to prevent repeats
 q = st.session_state.incoming_queue
