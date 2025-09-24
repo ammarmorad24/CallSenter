@@ -44,6 +44,3 @@ We didn’t stop at translation — we designed a complete workflow to generate 
 - [Mariam Hanafy](https://github.com/MariamHanafy14) 
 - [Nadine Hazem](https://github.com/Nadine305)
 - [Zeinab Mohamed](https://github.com/zeinab-mohamed0)
-
-- [اسم زميلة 1](https://github.com/xxxx)  
-- [اسم زميلة 2](https://github.com/xxxx)  
